@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>历史抉择 · 全结局结语完整版</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{background:#0f1720;color:#f0f4f8;min-height:100vh;padding:24px;display:flex;flex-direction:column;align-items:center}
+.title{font-size:38px;font-weight:700;margin:30px 0 12px}
+.subtitle{color:#94a3b8;margin-bottom:40px;max-width:700px;text-align:center;line-height:1.7}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;width:100%;max-width:950px;margin-bottom:30px}
+.option{background:#1e293b;border-radius:18px;padding:26px;cursor:pointer;border:1px solid #334155;transition:0.25s}
+.option:hover{background:#273449;border-color:#3b82f6;transform:translateY(-3px)}
+.option h3{font-size:20px;margin-bottom:10px;color:#f8fafc}
+.option p{font-size:16px;color:#94a3b8;line-height:1.5}
+.card{background:#182231;border-radius:22px;width:100%;max-width:800px;padding:48px;box-shadow:0 8px 40px #0006;display:none}
+.card.show{display:block;animation:fade 0.45s forwards}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.story-title{font-size:28px;font-weight:600;margin-bottom:22px;color:#f8fafc}
+.story-content{font-size:19px;line-height:2;color:#e2e8f0;margin-bottom:36px;min-height:150px;white-space:pre-line}
+.choices{display:flex;flex-direction:column;gap:16px}
+.choice{background:#273449;border:1px solid #374155;border-radius:16px;padding:22px 24px;font-size:18px;cursor:pointer;transition:0.2s}
+.choice:hover{background:#2d3a50;border-color:#3b82f6}
+.ending{background:#243043;padding:32px;border-radius:18px;margin-top:28px;display:none;line-height:2;font-size:18px;white-space:pre-line}
+.ending.show{display:block;animation:fade 0.45s forwards}
+.btns{margin-top:34px;display:none;gap:18px;justify-content:center}
+.btns.show{display:flex}
+.btn{padding:18px 32px;background:#3b82f6;color:#fff;border:none;border-radius:16px;font-size:17px;cursor:pointer}
+.btn-back{background:#2e3b52}
+</style>
+</head>
+
+<body>
+
+<div class="title">历史抉择</div>
+<div class="subtitle">你将回到关键历史时刻，每一次选择，都会走向完全不同的世界线</div>
+<div class="menu" id="menu"></div>
+
+<div class="card" id="card">
+  <div class="story-title" id="title"></div>
+  <div class="story-content" id="content"></div>
+  <div class="choices" id="choices"></div>
+  <div class="ending" id="ending"></div>
+  <div class="btns" id="btns">
+    <button class="btn" id="again">重新体验这段历史</button>
+    <button class="btn btn-back" id="back">返回历史选择大厅</button>
+  </div>
+</div>
+
+<script>
+window.onload = function(){
+
+let DATA = null;
+let currentMode = "";
+let currentStep = 1;
+
+// ✅ 先绑定按钮（避免 null 报错）
+document.getElementById("again").onclick = () => start(currentMode);
+document.getElementById("back").onclick = () => {
+  currentMode = "";
+  currentStep = 1;
+  document.getElementById("card").classList.remove("show");
+  init();
+};
+
+// ✅ 拉后端数据
+fetch('data.json')
+  .then(res => res.json())
+  .then(data => {
+    DATA = data;
+    init();
+  })
+  .catch(err => {
+    console.error("数据加载失败:", err);
+    alert("拿不到数据，请确认 Node 服务已启动");
+  });
+
+// ✅ 初始化菜单
+function init(){
+  const menu = document.getElementById("menu");
+  menu.innerHTML = "";
+
+  DATA.list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.innerHTML = `<h3>${item.name}</h3><p>${item.desc}</p>`;
+    div.onclick = () => start(item.id);
+    menu.appendChild(div);
+  });
+}
+
+// ✅ 开始剧情
+function start(id){
+  currentMode = id;
+  currentStep = 1;
+  render();
+}
+
+// ✅ 渲染剧情
+function render(){
+  const d = DATA[currentMode][currentStep];
+
+  document.getElementById("title").innerText = d.t || "";
+  document.getElementById("content").innerText = d.c || "";
+
+  const choices = document.getElementById("choices");
+  const ending = document.getElementById("ending");
+  const btns = document.getElementById("btns");
+
+  choices.innerHTML = "";
+  ending.classList.remove("show");
+  btns.classList.remove("show");
+
+  if(d.end){
+    ending.innerText = `${d.c}\n${d.note || ""}`;
+    ending.classList.add("show");
+    btns.classList.add("show");
+  }else{
+    (d.o || []).forEach(opt => {
+      const c = document.createElement("div");
+      c.className = "choice";
+      c.innerText = opt.text;
+      c.onclick = () => {
+        currentStep = opt.next;
+        render();
+      };
+      choices.appendChild(c);
+    });
+  }
+
+  document.getElementById("card").classList.add("show");
+}
+
+};
+</script>
+
+</body>
+</html>
